@@ -17,10 +17,8 @@ try:
 
     if ip != os.environ.get("PROD_SERVER_IP"):
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["beta_tgbMessages"]
-        mode = "DEV"
     else:
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["tgbMessages"]
-        mode = "PROD"
 
     component = tanjun.Component()
 
@@ -76,7 +74,5 @@ try:
     load_slash = component.make_loader()
 
 except Exception as e:
-    if prod:
-        sentry_sdk.capture_exception(e)
-    else:
-        logger.error("Error while trying to load this module with error : ", e)
+    logger.error("Error while trying to load mod_logFetcher.py module with error : ", e)
+    sentry_sdk.capture_exception(e)

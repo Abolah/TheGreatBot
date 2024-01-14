@@ -22,7 +22,6 @@ try:
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["beta_tgbMessages"]
     else:
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["tgbMessages"]
-        prod
 
 
     @component.with_listener()
@@ -117,7 +116,5 @@ try:
     component = component.make_loader()
 
 except Exception as e:
-    if prod:
-        sentry_sdk.capture_exception(e)
-    else:
-        logger.error("Error while trying to load this module with error : ", e)
+    logger.error("Error while trying to load event_messages.py module with error : ", e)
+    sentry_sdk.capture_exception(e)

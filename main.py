@@ -36,18 +36,14 @@ def CreateBot() -> hikari.GatewayBot:
     else:
         bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="WARNING")
         client = tanjun.Client.from_gateway_bot(bot)
+    module_path = os.path.join(BASEDIR, 'modules')
     try:
-        module_path = os.path.join(BASEDIR, 'modules')
-        try:
-            print(Fore.GREEN + "Loading modules" + Fore.YELLOW + " from " + module_path + Fore.RESET)
-            client.load_modules(*Path(module_path).glob("*.py"))
-            logger.info("Modules loaded")
-        except Exception as exceptionDetails:
-            logger.error("Error while loading modules with details : ", exceptionDetails)
-            #sentry_sdk.capture_exception(exceptionDetails)
-    except Exception as exception_error:
-        logger.error("Error while loading modules with error : ", exception_error)
-        # sentry_sdk.capture_exception(exception_error)
+        print(Fore.GREEN + "Loading modules" + Fore.YELLOW + " from " + module_path + Fore.RESET)
+        client.load_modules(*Path(module_path).glob("*.py"))
+        logger.info("Modules loaded")
+    except Exception as exceptionDetails:
+        logger.error("Error while loading modules with details : ", exceptionDetails)
+        sentry_sdk.capture_exception(exceptionDetails)
 
     return bot
 

@@ -25,8 +25,6 @@ try:
     load_slash = component.make_loader()
 
 except Exception as e:
-    if prod:
-        sentry_sdk.capture_exception(e)
-    else:
-        logger.error("Error while trying to load this module with error : ", e)
+    logger.error("Error while trying to load mod_punishements.py module with error : ", e)
+    sentry_sdk.capture_exception(e)
 

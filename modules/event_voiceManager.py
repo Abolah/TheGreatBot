@@ -14,7 +14,7 @@ try:
     mongoClient = pymongo.MongoClient(mongoURL)
     mongoChannelsCollection = mongoClient["TheGreatBot"]["tgbChannels"]
     MemberChannelsDict = {}
-    Category = [1126999482144399381, 1122945192157261935] # 2 catégories sont hardcodées pour le moment, Abodev & C&V, a changer plus tard (mongo ?)
+    Category = [1126999482144399381, 1122945192157261935]  # 2 catégories sont hardcodées pour le moment, Abodev & C&V, a changer plus tard (mongo ?)
     navette = [1125898837173731389, 1126999532060811367]
     Permissions = {}
 
@@ -22,7 +22,7 @@ try:
     @component.with_listener()
     async def JoinVoiceChannel(event: hikari.VoiceStateUpdateEvent, bot: hikari.GatewayBot = tanjun.injected(type=hikari.GatewayBot)) -> None:
         member = await bot.rest.fetch_member(event.state.guild_id, event.state.user_id)
-        if event.state.channel_id is not None: #This means the user joined a voice channel
+        if event.state.channel_id is not None:  #This means the user joined a voice channel
             if bot.cache.get_guild_channel(event.state.channel_id).parent_id in Category:
                 if event.state.channel_id in navette:
                     categorychannel = await bot.rest.fetch_channel(bot.cache.get_guild_channel(event.state.channel_id).parent_id) #Fetch l'objet Channel de la catégorie
@@ -110,8 +110,6 @@ try:
     component = component.make_loader()
 
 except Exception as e:
-    if prod:
-        sentry_sdk.capture_exception(e)
-    else:
-        logger.error("Error while trying to load this module with error : ", e)
+    logger.error("Error while trying to load event_voiceManager.py module with error : ", e)
+    sentry_sdk.capture_exception(e)
 

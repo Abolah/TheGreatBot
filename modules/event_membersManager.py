@@ -24,7 +24,6 @@ try:
         mongoMembersCollection = mongoClient["TheGreatBot"]["beta_tgbMembers"]
     else:
         mongoMembersCollection = mongoClient["TheGreatBot"]["tgbMembers"]
-        prod
 
 
     @component.with_listener()
@@ -116,7 +115,5 @@ try:
 
     component = component.make_loader()
 except Exception as e:
-    if prod:
-        sentry_sdk.capture_exception(e)
-    else:
-        logger.error("Error while trying to load this module with error : ", e)
+    logger.error("Error while trying to load event_memberManagers.py module with error : ", e)
+    sentry_sdk.capture_exception(e)
