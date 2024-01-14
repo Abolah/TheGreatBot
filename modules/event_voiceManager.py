@@ -4,9 +4,12 @@ import toolbox
 from time import sleep
 import os
 import pymongo
+import sentry_sdk
+
 try:
     component = tanjun.Component()
 
+    sentry_sdk.init(os.getenv("SENTRY"))
     mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
     mongoClient = pymongo.MongoClient(mongoURL)
     mongoChannelsCollection = mongoClient["TheGreatBot"]["tgbChannels"]
