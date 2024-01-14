@@ -18,7 +18,6 @@ try:
         mongoPunishmentsCollection = mongoClient["TheGreatBot"]["beta_tgbPunishments"]
     else:
         mongoPunishmentsCollection = mongoClient["TheGreatBot"]["tgbPunishments"]
-        prod
 
     component = tanjun.Component()
 
@@ -27,4 +26,3 @@ try:
 except Exception as e:
     logger.error("Error while trying to load mod_punishements.py module with error : ", e)
     sentry_sdk.capture_exception(e)
-
