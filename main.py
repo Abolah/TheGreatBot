@@ -17,7 +17,7 @@ if os.name != "nt":
     uvloop.install()
 
 ip = requests.get('https://ifconfig.me/').content.decode('utf8')
-#sentry_sdk.init(os.getenv("SENTRY"))
+sentry_sdk.init(os.getenv("SENTRY"))
 
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
@@ -31,7 +31,7 @@ else:
 def CreateBot() -> hikari.GatewayBot:
     if MODE == "DEV":
         print(Fore.YELLOW + "Running in DEV mode" + Fore.RESET)
-        bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="WARNING")
+        bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="DEBUG")
         client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=427939132984000544)
     else:
         bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="WARNING")

@@ -8,10 +8,12 @@ import pymongo
 from time import gmtime, strftime
 from datetime import datetime
 from time import sleep
+import sentry_sdk
 
 
 component = tanjun.Component()
 
+sentry_sdk.init(os.getenv("SENTRY"))
 ip = requests.get('https://ifconfig.me/').content.decode('utf8')
 mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
 mongoClient = pymongo.MongoClient(mongoURL)
