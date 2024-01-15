@@ -31,7 +31,7 @@ def CreateBot() -> hikari.GatewayBot:
     else:
         import schedulers
         bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="WARNING")
-        client = tanjun.Client.from_gateway_bot(bot)
+        client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=True)
     module_path = os.path.join(BASEDIR, 'modules')
     try:
         print(Fore.GREEN + "Loading modules" + Fore.YELLOW + " from " + module_path + Fore.RESET)
