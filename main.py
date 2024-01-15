@@ -29,6 +29,7 @@ def CreateBot() -> hikari.GatewayBot:
         bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="DEBUG")
         client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=427939132984000544)
     else:
+        import schedulers
         bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="WARNING")
         client = tanjun.Client.from_gateway_bot(bot)
     module_path = os.path.join(BASEDIR, 'modules')
