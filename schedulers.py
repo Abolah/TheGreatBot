@@ -4,9 +4,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from tcp_latency import measure_latency
 import sentry_sdk
 from loguru import logger
-import pymongo
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
 
 
 sentry_sdk.init(os.getenv("SENTRY"))
