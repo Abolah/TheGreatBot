@@ -16,16 +16,11 @@ if os.name != "nt":
     import uvloop
     uvloop.install()
 
-ip = requests.get('https://ifconfig.me/').content.decode('utf8')
 sentry_sdk.init(os.getenv("SENTRY"))
 
 
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
-
-if ip != os.environ.get("PROD_SERVER_IP"):
-    MODE = "DEV"
-else:
-    MODE = "PROD"
+MODE = os.getenv("ENV")
 
 
 def CreateBot() -> hikari.GatewayBot:

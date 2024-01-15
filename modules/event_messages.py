@@ -9,6 +9,7 @@ from time import gmtime, strftime
 from datetime import datetime
 from time import sleep
 import sentry_sdk
+from loguru import logger
 
 try:
     component = tanjun.Component()
@@ -18,10 +19,12 @@ try:
     mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
     mongoClient = pymongo.MongoClient(mongoURL)
 
-    if ip != os.environ.get("PROD_SERVER_IP"):
+    if os.getenv("ENV") == "DEV":
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["beta_tgbMessages"]
+        mongoMembersCollection = mongoClient["TheGreatBot"]["beta_tgbMembers"]
     else:
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["tgbMessages"]
+        mongoMembersCollection = mongoClient["TheGreatBot"]["tgbMembers"]
 
 
     @component.with_listener()
@@ -47,19 +50,45 @@ try:
                     try:
                         mongoMemberLogsCollection.insert_one(mongoUChannelsDict)
                     except Exception as e:
-                        if prod:
+                        if os.getenv("ENV") == "PROD":
                             sentry_sdk.capture_exception(e)
                         else:
                             logger.error("Error while trying to insert new Message in MongoDB with error : ", e)
                             print("Error while trying to insert new Message in MongoDB with error : ", e)
                 except Exception as e:
-                    if prod:
+                    if os.getenv("ENV") == "PROD":
                         sentry_sdk.capture_exception(e)
                     else:
                         logger.error("Error while trying to get message content with error : ", e)
                         print("Error while trying to get message content with error : ", e)
+                try:
+                    query = {"memberID": event.message.author.id}
+                    memberDocument = mongoMembersCollection.find_one(query)
+                    if memberDocument is None:
+                        query = {"memberID": event.message.author.id, "memberUsername": event.message.author.username,
+                                 "memberNickname": event.message.author.nickname, "memberOldNicknames": [],
+                                 "messagesSent": 1, "JoinedAt": event.member.joined_at}
+                        mongoMembersCollection.insert_one(query)
+                    else:
+                        if not "messagesSent" in memberDocument:
+                            messagesSent = 1
+                            query = {"memberID": event.message.author.id}
+                            newValue = {"$set": {"messagesSent": messagesSent}}
+                            mongoMembersCollection.update_one(query, newValue)
+                        else:
+                            messagesSent = memberDocument["messagesSent"]
+                            messagesSent += 1
+                            query = {"memberID": event.message.author.id}
+                            newValue = {"$set": {"messagesSent": messagesSent}}
+                            mongoMembersCollection.update_one(query, newValue)
+                except Exception as e:
+                    if os.getenv("ENV") == "PROD":
+                        sentry_sdk.capture_exception(e)
+                    else:
+                        logger.error("Error while trying to update message count with error : ", e)
+                        print("Error while trying to update message count with error : ", e)
         except Exception as e:
-            if prod:
+            if os.getenv("ENV") == "PROD":
                 sentry_sdk.capture_exception(e)
             else:
                 logger.error("Error while trying to get message content with error : ", e)
@@ -100,7 +129,7 @@ try:
                         logger.error("Error while trying to get message content with error : ", e, "\n and Message Informations: ", event.message.author, event.message.content, event.message.id, event.message.channel_id, event.message.attachments)
                         print("Error while trying to get message content with error : ", e, "\n and Message Informations: ", event.message.author, event.message.content, event.message.id, event.message.channel_id, event.message.attachments)
         except Exception as e:
-            if prod:
+            if os.getenv("ENV") == "PROD":
                 sentry_sdk.capture_exception(e)
             else:
                 print("Error while trying to get message content with error : ", e)
@@ -112,6 +141,26 @@ try:
         messageID = event.message_id
         query = {"MessageID": messageID}
         mongoMemberLogsCollection.update_many(query, {"$set": {"Deleted": True}})
+        document = mongoMemberLogsCollection.find_one({"MessageID": messageID})
+        memberDocument = mongoMembersCollection.find_one({"memberUsername": document["Author"]})
+        if memberDocument is None:
+            query = {"memberID": event.message.author.id, "memberUsername": event.message.author.username,
+                     "memberNickname": event.message.author.nickname, "memberOldNicknames": [],
+                     "messagesSent": 0, "JoinedAt": event.member.joined_at}
+            mongoMembersCollection.insert_one(query)
+        else:
+            if not "messagesSent" in memberDocument:
+                messagesSent = 1
+                query = {"memberUsername": document["Author"]}
+                newValue = {"$set": {"messagesSent": messagesSent}}
+                mongoMembersCollection.update_one(query, newValue)
+            else:
+                messagesSent = memberDocument["messagesSent"]
+                messagesSent -= 1
+                query = {"memberUsername": document["Author"]}
+                newValue = {"$set": {"messagesSent": messagesSent}}
+                mongoMembersCollection.update_one(query, newValue)
+
 
     component = component.make_loader()
 
