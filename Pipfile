@@ -18,6 +18,7 @@ pyopenssl = "*"
 pymongo = "*"
 dnspython = "*"
 pynacl = "*"
+tcp-latency = "*"
 
 
 uvloop = {version = "*", markers = "sys_platform == 'linux'"}
