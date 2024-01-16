@@ -15,7 +15,6 @@ try:
     component = tanjun.Component()
 
     sentry_sdk.init(os.getenv("SENTRY"))
-    ip = requests.get('https://ifconfig.me/').content.decode('utf8')
     mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
     mongoClient = pymongo.MongoClient(mongoURL)
 
@@ -35,7 +34,7 @@ try:
                     messageTime = datetime.strptime(datetime.now().isoformat(), "%Y-%m-%dT%H:%M:%S.%f")
                     messageID = event.message.id
                     messageContent = event.message.content
-                    messageChannel = str(await bot.rest.fetch_channel(bot.cache.get_guild_channel(event.message.channel_id)))
+                    messageChannel = str(await bot.rest.fetch_channel(event.message.channel_id))
                     messageAuthor = event.message.author.username
                     messageObject = await bot.rest.fetch_message(event.message.channel_id, event.message.id)
                     if messageObject.attachments:
@@ -50,6 +49,9 @@ try:
                     try:
                         mongoMemberLogsCollection.insert_one(mongoUChannelsDict)
                     except Exception as e:
+                        if e == "DocumentTooLarge":
+                            mongoUChannelsDict = {"Author": messageAuthor, "Message": messageContent, "MessageID": messageID, "Channel": messageChannel, "Time": messageTime, "Media": ["List Emptied for being too large"], "Deleted": False, "Updated": False}
+                            mongoMemberLogsCollection.insert_one(mongoUChannelsDict)
                         if os.getenv("ENV") == "PROD":
                             sentry_sdk.capture_exception(e)
                         else:
@@ -66,7 +68,7 @@ try:
                     memberDocument = mongoMembersCollection.find_one(query)
                     if memberDocument is None:
                         query = {"memberID": event.message.author.id, "memberUsername": event.message.author.username,
-                                 "memberNickname": event.message.author.nickname, "memberOldNicknames": [],
+                                 "memberNickname": event.message.author.global_name, "memberOldNicknames": [],
                                  "messagesSent": 1, "JoinedAt": event.member.joined_at}
                         mongoMembersCollection.insert_one(query)
                     else:
@@ -143,13 +145,8 @@ try:
         mongoMemberLogsCollection.update_many(query, {"$set": {"Deleted": True}})
         document = mongoMemberLogsCollection.find_one({"MessageID": messageID})
         memberDocument = mongoMembersCollection.find_one({"memberUsername": document["Author"]})
-        if memberDocument is None:
-            query = {"memberID": event.message.author.id, "memberUsername": event.message.author.username,
-                     "memberNickname": event.message.author.nickname, "memberOldNicknames": [],
-                     "messagesSent": 0, "JoinedAt": event.member.joined_at}
-            mongoMembersCollection.insert_one(query)
-        else:
-            if not "messagesSent" in memberDocument:
+        if memberDocument is not None:
+            if "messagesSent" not in memberDocument:
                 messagesSent = 1
                 query = {"memberUsername": document["Author"]}
                 newValue = {"$set": {"messagesSent": messagesSent}}
@@ -165,5 +162,7 @@ try:
     component = component.make_loader()
 
 except Exception as e:
-    logger.error("Error while trying to load event_messages.py module with error : ", e)
-    sentry_sdk.capture_exception(e)
+    if os.getenv("ENV") == "DEV":
+        print("Error loading module event_messages.py with error : ", e)
+    else:
+        sentry_sdk.capture_exception(e)

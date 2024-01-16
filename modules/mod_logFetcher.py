@@ -32,6 +32,7 @@ try:
     @tanjun.as_slash_command("getlogs", "Récupère les logs d'un utilisateur")
     async def mod_command_getLogs(ctx: tanjun.abc.SlashContext, member, channel, limit, message_id, deleted, updated) -> None:
         await ctx.respond("Commande en cours de développement")
+        '''
         #verify if the user is an admin or has a role
         print(channel)
         print(limit)
@@ -69,10 +70,12 @@ try:
         )
 
         # await ctx.respond(embed)
-
+        '''
 
     load_slash = component.make_loader()
 
 except Exception as e:
-    logger.error("Error while trying to load mod_logFetcher.py module with error : ", e)
-    sentry_sdk.capture_exception(e)
+    if os.getenv("ENV") == "DEV":
+        print("Error while trying to load mod_logFetcher.py module with error : ", e)
+    else:
+        sentry_sdk.capture_exception(e)

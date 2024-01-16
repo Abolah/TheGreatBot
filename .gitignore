@@ -162,4 +162,5 @@ cython_debug/
 # Custom Stuff
 bot.log
 test.py
+test.py.BAK
 voiceChannelRegisterer.py
