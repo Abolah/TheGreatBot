@@ -37,25 +37,28 @@ try:
         try:
             warnedMember = mongoPunishmentsCollection.find_one({"member": str(member)})
             if warnedMember is None:
-                query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnReasons": [str(mod_reason)], "warnDates": [now]}
+                query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnModReasons": [str(mod_reason)], "warnUserReasons": [str(user_reason)], "warnDates": [now]}
                 mongoPunishmentsCollection.insert_one(query)
             else:
                 warnNumber = warnedMember["warnNumber"]
                 warnNumber += 1
-                warnReasons = warnedMember["warnReasons"]
-                warnReasons.append(str(mod_reason))
+                warnModReasons = warnedMember["warnModReasons"]
+                warnModReasons.append(str(mod_reason))
+                warnUserReasons = warnedMember["warnUserReasons"]
+                warnUserReasons.append(str(user_reason))
                 warnDates = warnedMember["warnDates"]
                 warnDates.append(now)
-                query = {"member": member.username, "memberID": member.id, "warnNumber": warnNumber, "warnReasons": warnReasons, "warnDates": warnDates}
+                query = {"member": member.username, "memberID": member.id, "warnNumber": warnNumber, "warnModReasons": warnModReasons, "warnUserReasons": warnUserReasons, "warnDates": warnDates}
                 mongoPunishmentsCollection.update_one({"member": member.username}, {"$set": query})
         except TypeError:
-            query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnReasons": [str(mod_reason)], "warnDates": [now]}
+            query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnModReasons": [str(mod_reason)], "warnUserReasons": [str(user_reason)], "warnDates": [now]}
             mongoPunishmentsCollection.insert_one(query)
         ChannelDMWithMember = await bot.rest.create_dm_channel(member)
-        await ChannelDMWithMember.send("Bonsoir {},\nVous avez recu un avertissement par {} pour la raison suivante :\n {}".format(member, ctx.member.username, user_reason))
+        await ChannelDMWithMember.send("Bonsoir {},\nVous avez recu un avertissement par la modération pour la raison suivante :\n {}".format(member, user_reason))
 
         await bot.rest.edit_member(guild=ctx.guild_id, user=member, communication_disabled_until=end)
-        return await ctx.respond("Commande en cours de développement")
+
+        return await ctx.create_initial_response("Warning envoyé.", ephemeral=True)
 
     load_slash = component.make_loader()
 
