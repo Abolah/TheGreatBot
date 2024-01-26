@@ -26,7 +26,6 @@ try:
     @component.with_slash_command
     @tanjun.as_slash_command("roulette", "Joue un round de roulette russe. Si tu perds, tu es TO pendant 30 secondes.")
     async def commandRoulette(ctx: tanjun.abc.SlashContext,bot: hikari.GatewayBot = tanjun.injected(type=hikari.GatewayBot)) -> None:
-        # gérer les exclusions de member & channel
         allowedChannels = mongoExclusionCollection.find_one({})["rouletteAllowedChannels"]
         if ctx.channel_id in allowedChannels:
             member = ctx.member
@@ -121,6 +120,8 @@ try:
                         )
 
                 await ctx.respond(embed)
+        else:
+            pass
 
 
     load_slash = component.make_loader()

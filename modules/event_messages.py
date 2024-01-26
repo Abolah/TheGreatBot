@@ -5,6 +5,7 @@ import requests
 import base64
 import os
 import pymongo
+import pymongo.errors
 from time import gmtime, strftime
 from datetime import datetime
 from time import sleep
@@ -48,10 +49,10 @@ try:
                         mongoUChannelsDict = {"Author": messageAuthor, "Message": messageContent, "MessageID": messageID, "Channel": messageChannel, "Time": messageTime, "Deleted": False, "Updated": False}
                     try:
                         mongoMemberLogsCollection.insert_one(mongoUChannelsDict)
+                    except pymongo.errors.DocumentTooLarge:
+                        mongoUChannelsDict = {"Author": messageAuthor, "Message": messageContent, "MessageID": messageID, "Channel": messageChannel, "Time": messageTime, "Media": ["List Emptied for being too large"], "Deleted": False, "Updated": False}
+                        mongoMemberLogsCollection.insert_one(mongoUChannelsDict)
                     except Exception as e:
-                        if e == "DocumentTooLarge":
-                            mongoUChannelsDict = {"Author": messageAuthor, "Message": messageContent, "MessageID": messageID, "Channel": messageChannel, "Time": messageTime, "Media": ["List Emptied for being too large"], "Deleted": False, "Updated": False}
-                            mongoMemberLogsCollection.insert_one(mongoUChannelsDict)
                         if os.getenv("ENV") == "PROD":
                             sentry_sdk.capture_exception(e)
                         else:
@@ -126,10 +127,8 @@ try:
                             # print("New Message inserted in MongoDB with data : ", mongoUChannelsDict)
                         except Exception as e:
                             logger.error("Error while trying to insert new Message in MongoDB with error : ", e)
-                            print("Error while trying to insert new Message in MongoDB with error : ", e)
                     except Exception as e:
                         logger.error("Error while trying to get message content with error : ", e, "\n and Message Informations: ", event.message.author, event.message.content, event.message.id, event.message.channel_id, event.message.attachments)
-                        print("Error while trying to get message content with error : ", e, "\n and Message Informations: ", event.message.author, event.message.content, event.message.id, event.message.channel_id, event.message.attachments)
         except Exception as e:
             if os.getenv("ENV") == "PROD":
                 sentry_sdk.capture_exception(e)
@@ -144,7 +143,10 @@ try:
         query = {"MessageID": messageID}
         mongoMemberLogsCollection.update_many(query, {"$set": {"Deleted": True}})
         document = mongoMemberLogsCollection.find_one({"MessageID": messageID})
-        memberDocument = mongoMembersCollection.find_one({"memberUsername": document["Author"]})
+        try:
+            memberDocument = mongoMembersCollection.find_one({"memberUsername": document["Author"]})
+        except NoneType:
+            memberDocument = None
         if memberDocument is not None:
             if "messagesSent" not in memberDocument:
                 messagesSent = 1

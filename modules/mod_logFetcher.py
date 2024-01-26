@@ -10,12 +10,11 @@ import sentry_sdk
 
 try:
     sentry_sdk.init(os.getenv("SENTRY"))
-    ip = requests.get('https://ifconfig.me/').content.decode('utf8')
 
     mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
     mongoClient = pymongo.MongoClient(mongoURL)
 
-    if ip != os.environ.get("PROD_SERVER_IP"):
+    if os.getenv("ENV") == "DEV":
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["beta_tgbMessages"]
     else:
         mongoMemberLogsCollection = mongoClient["TheGreatBot"]["tgbMessages"]

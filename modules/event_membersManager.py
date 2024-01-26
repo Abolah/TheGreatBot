@@ -16,11 +16,10 @@ try:
 
     sentry_sdk.init(os.getenv("SENTRY"))
 
-    ip = requests.get('https://ifconfig.me/').content.decode('utf8')
     mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
     mongoClient = pymongo.MongoClient(mongoURL)
 
-    if ip != os.environ.get("PROD_SERVER_IP"):
+    if os.getenv("ENV") == "DEV":
         mongoMembersCollection = mongoClient["TheGreatBot"]["beta_tgbMembers"]
     else:
         mongoMembersCollection = mongoClient["TheGreatBot"]["tgbMembers"]
@@ -67,11 +66,11 @@ try:
                             mongoMembersCollection.update_one(query, {
                                 "$set": {"memberNickname": event.member.username, "memberOldNicknames": oldNicknames}})
         except Exception as e:
-            if prod:
-                sentry_sdk.capture_exception(e)
-            else:
+            if os.getenv("ENV") == "DEV":
                 print("Error while trying to get message content with error : ", e)
                 print(event.message)
+            else:
+                sentry_sdk.capture_exception(e)
 
 
     @component.with_listener()
@@ -85,11 +84,11 @@ try:
                      "JoinedAt": member.joined_at}
             mongoMembersCollection.insert_one(query)
         except Exception as e:
-            if prod:
-                sentry_sdk.capture_exception(e)
-            else:
+            if os.getenv("ENV") == "DEV":
                 print("Error while trying to get message content with error : ", e)
                 print(event.message)
+            else:
+                sentry_sdk.capture_exception(e)
 
 
     @component.with_listener()
@@ -107,11 +106,11 @@ try:
                 query = {"memberID": member.id}
                 mongoMembersCollection.update_one(query, {"$set": {"LeftAt": datetime.now()}})
         except Exception as e:
-            if prod:
-                sentry_sdk.capture_exception(e)
-            else:
+            if os.getenv("ENV") == "DEV":
                 print("Error while trying to get message content with error : ", e)
                 print(event.message)
+            else:
+                sentry_sdk.capture_exception(e)
 
     component = component.make_loader()
 except Exception as e:

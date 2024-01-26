@@ -10,21 +10,17 @@ from colorama import Fore
 from datadog import initialize, statsd
 from loguru import logger
 
-global MODE
 
 if os.name != "nt":
     import uvloop
     uvloop.install()
 
 sentry_sdk.init(os.getenv("SENTRY"))
-
-
 BASEDIR = os.path.abspath(os.path.dirname(__file__))
-MODE = os.getenv("ENV")
 
 
 def CreateBot() -> hikari.GatewayBot:
-    if MODE == "DEV":
+    if os.getenv("ENV") == "DEV":
         print(Fore.YELLOW + "Running in DEV mode" + Fore.RESET)
         bot = hikari.GatewayBot(intents=hikari.Intents.ALL, token=os.getenv("DISCORD"), logs="DEBUG")
         client = tanjun.Client.from_gateway_bot(bot, declare_global_commands=427939132984000544)
