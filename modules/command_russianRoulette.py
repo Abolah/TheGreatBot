@@ -16,16 +16,16 @@ try:
     mongoClient = pymongo.MongoClient(mongoURL)
 
     if os.getenv("ENV") == "DEV":
-        mongoExclusionCollection = mongoClient["TheGreatBot"]["tgbExclusion"]
+        mongoExclusionCollection = mongoClient["TheGreatBot"]["tgbGlobalParameters"]
         mongoRouletteLeaderboard = mongoClient["TheGreatBot"]["beta_tgbRouletteLDB"]
     else:
-        mongoExclusionCollection = mongoClient["TheGreatBot"]["tgbExclusion"]
+        mongoExclusionCollection = mongoClient["TheGreatBot"]["tgbGlobalParameters"]
         mongoRouletteLeaderboard = mongoClient["TheGreatBot"]["tgbRouletteLDB"]
 
 
     @component.with_slash_command
     @tanjun.as_slash_command("roulette", "Joue un round de roulette russe. Si tu perds, tu es TO pendant 30 secondes.")
-    async def commandRoulette(ctx: tanjun.abc.SlashContext,bot: hikari.GatewayBot = tanjun.injected(type=hikari.GatewayBot)) -> None:
+    async def commandRoulette(ctx: tanjun.abc.SlashContext, bot: hikari.GatewayBot = tanjun.injected(type=hikari.GatewayBot)) -> None:
         allowedChannels = mongoExclusionCollection.find_one({})["rouletteAllowedChannels"]
         if ctx.channel_id in allowedChannels:
             member = ctx.member
@@ -120,8 +120,16 @@ try:
                         )
 
                 await ctx.respond(embed)
+
         else:
-            pass
+            try:
+                await ctx.create_initial_response("Tu ne peux pas jouer à la roulette russe ici. Va dans <#1196464488031989932>", ephemeral=True)
+            except Exception as e:
+                if os.getenv("ENV") == "DEV":
+                    print("Error while trying to get message content with error : ", e)
+                    print(ctx.message)
+                else:
+                    sentry_sdk.capture_exception(e)
 
 
     load_slash = component.make_loader()
