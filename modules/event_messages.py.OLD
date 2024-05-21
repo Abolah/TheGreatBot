@@ -145,7 +145,7 @@ try:
         document = mongoMemberLogsCollection.find_one({"MessageID": messageID})
         try:
             memberDocument = mongoMembersCollection.find_one({"memberUsername": document["Author"]})
-        except NoneType:
+        except NoneTypeError:
             memberDocument = None
         if memberDocument is not None:
             if "messagesSent" not in memberDocument:

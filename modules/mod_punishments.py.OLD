@@ -11,6 +11,7 @@ try:
     sentry_sdk.init(os.getenv("SENTRY"))
     mongoURL = "mongodb+srv://{}:{}@{}/{}?retryWrites=true&w=majority".format(os.getenv("MONGO_USER"), os.getenv("MONGO_PASSWD"), os.getenv("MONGO_CLUSTER"), os.getenv("MONGO_DB"))
     mongoClient = pymongo.MongoClient(mongoURL)
+    mongoGlobalParams = mongoClient["TheGreatBot"]["tgbGlobalParameters"]
 
     if os.getenv("ENV") == "DEV":
         mongoPunishmentsCollection = mongoClient["TheGreatBot"]["beta_tgbPunishments"]
@@ -26,37 +27,40 @@ try:
     @tanjun.with_int_slash_option("minutes", "Nombre de minutes pendant lesquelles le membre sera TO. Par défaut, 0.", default=0)
     @tanjun.with_int_slash_option("secondes", "Nombre de secondes pendant lesquelles le membre sera TO. Par défaut, 30.", default=30)
     @tanjun.with_str_slash_option("mod_reason", "Raison de l'avertissement donné à l'utilisateur. Par défaut, aucune raison.", default="Aucune raison donnée.")
-    @tanjun.with_str_slash_option("user_reason", "Raison de l'avertissement. Par défaut, aucune raison.",
-                                  default="Aucune raison donnée.")
+    @tanjun.with_bool_slash_option("timeout", "Si l'utilisateur doit être timeout. Par défaut à false. Si il doit l'être, mettre True.", default=False)
+    @tanjun.with_str_slash_option("user_reason", "Raison de l'avertissement. Par défaut, aucune raison.", default="Aucune raison donnée.")
     @tanjun.with_author_permission_check(1099511627776, error=None, error_message="Tu n'as pas les permissions pour utiliser cette commande.", follow_wrapped=False)
     @tanjun.as_slash_command("warn", "Averti un utilisateur et applique un TO d'une durée personnalisée. Par défaut, sera TO 30 secondes.")
-    async def commandeWarn(ctx: tanjun.abc.SlashContext, member, days, hours, minutes, secondes, mod_reason, user_reason, bot: hikari.GatewayBot = tanjun.injected(type=hikari.GatewayBot)) -> None:
+    async def commandeWarn(ctx: tanjun.abc.SlashContext, member, days, hours, minutes, secondes, mod_reason, user_reason, timeout, bot: hikari.GatewayBot = tanjun.injected(type=hikari.GatewayBot)) -> None:
+        immuneUsers = mongoGlobalParams.find_one({})["timeoutImmuneUsers"]
         now = datetime.now(timezone.utc)
         delta = timedelta(days=days, hours=hours, minutes=minutes, seconds=secondes)
         end = now + delta
         try:
             warnedMember = mongoPunishmentsCollection.find_one({"member": str(member)})
             if warnedMember is None:
-                query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnModReasons": [str(mod_reason)], "warnUserReasons": [str(user_reason)], "warnDates": [now]}
+                query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnMod": [str(ctx.member)], "warnModReasons": [str(mod_reason)], "warnUserReasons": [str(user_reason)], "warnDates": [now]}
                 mongoPunishmentsCollection.insert_one(query)
             else:
                 warnNumber = warnedMember["warnNumber"]
                 warnNumber += 1
+                warnMod = warnedMember["warnMod"]
+                warnMod.append(str(ctx.member))
                 warnModReasons = warnedMember["warnModReasons"]
                 warnModReasons.append(str(mod_reason))
                 warnUserReasons = warnedMember["warnUserReasons"]
                 warnUserReasons.append(str(user_reason))
                 warnDates = warnedMember["warnDates"]
                 warnDates.append(now)
-                query = {"member": member.username, "memberID": member.id, "warnNumber": warnNumber, "warnModReasons": warnModReasons, "warnUserReasons": warnUserReasons, "warnDates": warnDates}
+                query = {"member": member.username, "memberID": member.id, "warnNumber": warnNumber, "warnMod": warnMod, "warnModReasons": warnModReasons, "warnUserReasons": warnUserReasons, "warnDates": warnDates}
                 mongoPunishmentsCollection.update_one({"member": member.username}, {"$set": query})
         except TypeError:
-            query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnModReasons": [str(mod_reason)], "warnUserReasons": [str(user_reason)], "warnDates": [now]}
+            query = {"member": member.username, "memberID": member.id, "warnNumber": 1, "warnMod": [str(ctx.member)], "warnModReasons": [str(mod_reason)], "warnUserReasons": [str(user_reason)], "warnDates": [now]}
             mongoPunishmentsCollection.insert_one(query)
         ChannelDMWithMember = await bot.rest.create_dm_channel(member)
         await ChannelDMWithMember.send("Bonsoir {},\nVous avez recu un avertissement par la modération pour la raison suivante :\n {}".format(member, user_reason))
-
-        await bot.rest.edit_member(guild=ctx.guild_id, user=member, communication_disabled_until=end)
+        if timeout is True and member not in immuneUsers:
+            await bot.rest.edit_member(guild=ctx.guild_id, user=member, communication_disabled_until=end)
 
         return await ctx.create_initial_response("Warning envoyé.", ephemeral=True)
 
