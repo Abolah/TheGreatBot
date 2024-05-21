@@ -11,7 +11,7 @@ sentry_sdk.init(os.getenv("SENTRY"))
 
 def pingStatusPage():
     latency = measure_latency(host='discord.com')
-    url = "https://status.abolah.dev/api/push/tZrOrdv8NE?status=up&msg=OK&ping={}".format(str(latency[0]).split('.')[0])
+    url = "https://uptime.abolah.dev/api/push/0Tjx3UlAdx?status=up&msg=OK&ping={}".format(str(latency[0]).split('.')[0])
     try:
         requests.get(url)
     except Exception as e:
